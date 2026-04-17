@@ -1,0 +1,112 @@
+// Literal Types (Enums)
+export type RoleType = 'admin' | 'manager' | 'staff' | 'driver';
+export type LinenStatus = 'in_stock' | 'out' | 'rewash' | 'rejected' | 'lost';
+export type ScanEventType = 'checkout' | 'checkin' | 'rewash' | 'reject' | 'audit';
+export type BatchType = 'outbound' | 'inbound';
+export type RouteStatus = 'pending' | 'active' | 'completed';
+export type RewashReason = 'stain' | 'damage' | 'special_treatment' | 'other';
+
+// Tables
+
+export interface Organization {
+  id: string;
+  name: string;
+  slug: string;
+  settings: Record<string, any>;
+  created_at: string;
+}
+
+export interface Profile {
+  id: string;
+  org_id: string;
+  full_name: string | null;
+  role: RoleType;
+  created_at: string;
+}
+
+export interface Client {
+  id: string;
+  org_id: string;
+  name: string;
+  contact_name: string | null;
+  contact_phone: string | null;
+  contact_email: string | null;
+  address: string | null;
+  active: boolean;
+  created_at: string;
+}
+
+export interface LinenCategory {
+  id: string;
+  org_id: string;
+  name: string;
+  lifespan_cycles: number;
+  replacement_cost: number | null;
+  created_at: string;
+}
+
+export interface LinenItem {
+  id: string;
+  org_id: string;
+  rfid_tag_id: string;
+  category_id: string | null;
+  client_id: string | null;
+  status: LinenStatus;
+  wash_count: number;
+  last_scan_at: string | null;
+  last_scan_location: string | null;
+  created_at: string;
+}
+
+export interface ScanEvent {
+  id: string;
+  org_id: string;
+  rfid_tag_id: string;
+  item_id: string;
+  event_type: ScanEventType;
+  client_id: string | null;
+  gate_id: string | null;
+  batch_id: string | null;
+  source: string | null;
+  scanned_by: string | null;
+  created_at: string;
+  linen_items?: { rfid_tag_id: string } | null;
+  clients?: { name: string } | null;
+}
+
+export interface Route {
+  id: string;
+  org_id: string;
+  name: string;
+  driver_id: string | null;
+  vehicle_plate: string | null;
+  status: RouteStatus;
+  scheduled_at: string | null;
+  stops: any[]; // JSONB maps to an array of any based on our default '[]'
+  created_at: string;
+}
+
+export interface DeliveryBatch {
+  id: string;
+  org_id: string;
+  client_id: string;
+  batch_type: BatchType;
+  route_id: string | null;
+  total_items: number;
+  returned_items: number;
+  manifest_signed: boolean;
+  signed_by: string | null;
+  driver_id: string | null;
+  created_at: string;
+}
+
+export interface RewashRecord {
+  id: string;
+  org_id: string;
+  item_id: string;
+  client_id: string | null;
+  reason: RewashReason;
+  billable: boolean;
+  resolved: boolean;
+  created_at: string;
+}

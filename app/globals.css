@@ -1,26 +1,165 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Sidebar */
+  --sidebar-bg: #FFFFFF;
+  --sidebar-border: #F1F5F9;
+  --sidebar-text: #64748B;
+  --sidebar-text-active: #0F172A;
+  --sidebar-active-bg: #F1F5F9;
+  --sidebar-hover-bg: #F8FAFC;
+
+  /* Content */
+  --content-bg: #F8FAFC;
+  --card-bg: #FFFFFF;
+  --card-border: #E2E8F0;
+  --card-radius: 12px;
+
+  /* Brand */
+  --accent: #6366F1;
+  --accent-light: #EEF2FF;
+  --accent-dark: #4338CA;
+
+  /* Semantic */
+  --success: #10B981;
+  --success-light: #ECFDF5;
+  --warning: #F59E0B;
+  --warning-light: #FFFBEB;
+  --danger: #EF4444;
+  --danger-light: #FEF2F2;
+  --ai: #8B5CF6;
+  --ai-light: #F5F3FF;
+
+  /* Typography */
+  --text-primary: #0F172A;
+  --text-secondary: #475569;
+  --text-muted: #94A3B8;
+  --text-disabled: #CBD5E1;
+
+  /* Shadcn Overrides */
+  --background: #F8FAFC;
+  --foreground: #0F172A;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --color-background: var(--content-bg);
+  --color-foreground: var(--text-primary);
+  --color-card: var(--card-bg);
+  --color-card-foreground: var(--text-primary);
+  --color-popover: #FFFFFF;
+  --color-popover-foreground: var(--text-primary);
+  --color-muted: var(--text-muted);
+  --color-muted-foreground: var(--text-muted);
+  --color-accent: var(--accent-light);
+  --color-accent-foreground: var(--accent-dark);
+  --color-border: var(--card-border);
+  --color-input: var(--card-border);
+  --font-sans: 'Inter', var(--font-thai), sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+  --font-thai: var(--font-thai);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--content-bg);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Modern Thai font override when in Thai mode */
+.lang-th, .lang-th body {
+  font-family: var(--font-thai), var(--font-sans) !important;
+}
+
+/* ── Animations ───────────────────────────────────────────────── */
+@keyframes pulse {
+  0%   { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+  70%  { transform: scale(1);    box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
+  100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+}
+
+@keyframes scan-in {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fade-in-up {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.animate-in     { animation: slide-in-from-top 0.3s ease-out; }
+.animate-fade-up { animation: fade-in-up 0.5s ease-out forwards; opacity: 0; }
+.scan-row-enter { animation: scan-in 0.25s ease forwards; }
+.metric-bump    { animation: metric-bump 0.6s ease-out; }
+
+/* Stagger delays */
+.delay-100 { animation-delay: 100ms; }
+.delay-200 { animation-delay: 200ms; }
+.delay-300 { animation-delay: 300ms; }
+.delay-400 { animation-delay: 400ms; }
+.delay-500 { animation-delay: 500ms; }
+
+/* ── Card utilities ───────────────────────────────────────────── */
+.card {
+  background: var(--card-bg);
+  border: none;
+  border-radius: var(--card-radius);
+  padding: 20px 24px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.01), 0 1px 2px rgba(0,0,0,0.02);
+}
+
+.metric-card {
+  background: var(--card-bg);
+  border: none;
+  border-radius: var(--card-radius);
+  padding: 20px 24px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.01), 0 1px 2px rgba(0,0,0,0.02);
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+.metric-card:hover {
+  box-shadow: 0 10px 30px rgba(0,0,0,0.04);
+  transform: translateY(-2px);
+}
+
+/* ── Text utilities ───────────────────────────────────────────── */
+.status-dot { width: 8px; height: 8px; border-radius: 50%; }
+.pulse-dot  { width: 8px; height: 8px; border-radius: 50%; animation: pulse 2s infinite; }
+
+.text-title    { @apply text-2xl font-bold tracking-tight text-slate-900; }
+.text-subtitle { @apply text-sm text-slate-500 mt-0.5; }
+.tag-pill      { @apply font-mono text-[11px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded-md border border-slate-200; }
+
+/* ── Fix shadcn/Radix dropdown transparency ──────────────────── */
+/* Use a very aggressive selector to ensure white background */
+div[data-radix-popper-content-wrapper],
+[data-radix-select-content],
+[data-radix-dropdown-menu-content],
+[data-radix-popover-content],
+.radix-select-content,
+.radix-dropdown-menu-content {
+  background-color: #FFFFFF !important;
+  background: #FFFFFF !important;
+  opacity: 1 !important;
+  border: 1px solid #E2E8F0 !important;
+  border-radius: 8px !important;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05) !important;
+  z-index: 9999 !important;
+}
+
+/* Ensure the portal itself is opaque if needed */
+[data-radix-portal] {
+  z-index: 9999 !important;
+}
+
+[data-radix-select-item]:hover,
+[data-radix-dropdown-menu-item]:hover {
+  background-color: #F1F5F9 !important;
+  cursor: pointer;
+}
+
+[data-radix-select-item][data-state="checked"],
+[data-radix-dropdown-menu-item][data-state="checked"] {
+  background-color: #EEF2FF !important;
+  color: #4338CA !important;
 }
