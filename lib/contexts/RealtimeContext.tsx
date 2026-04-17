@@ -9,7 +9,7 @@ export type RealtimeStatus = 'CONNECTING' | 'SUBSCRIBED' | 'TIMED_OUT' | 'CLOSED
 interface RealtimeContextType {
   status: RealtimeStatus;
   orgId: string;
-  lastEvent: (ScanEvent & { source_method?: 'db' | 'broadcast' }) | null;
+  lastEvent: (ScanEvent & { source_method?: 'db' | 'broadcast', received_at?: number }) | null;
 }
 
 const RealtimeContext = createContext<RealtimeContextType | undefined>(undefined);
@@ -23,7 +23,7 @@ export function RealtimeProvider({
 }) {
   const [status, setStatus] = useState<RealtimeStatus>('CONNECTING');
   const [orgId, setOrgId] = useState(initialOrgId);
-  const [lastEvent, setLastEvent] = useState<(ScanEvent & { source_method?: 'db' | 'broadcast' }) | null>(null);
+  const [lastEvent, setLastEvent] = useState<(ScanEvent & { source_method?: 'db' | 'broadcast', received_at?: number }) | null>(null);
 
   // Stabilise the client — createBrowserClient returns a new object on every call,
   // so we hold it in a ref to prevent useEffect dependency churn.
