@@ -10,15 +10,22 @@ import { createClient } from '@/lib/supabase/client';
 type DriverShellProps = {
   driverName: string;
   activeStopHref: string;
+  demoMode?: boolean;
   children: React.ReactNode;
 };
 
-export function DriverShell({ driverName, activeStopHref, children }: DriverShellProps) {
+export function DriverShell({ driverName, activeStopHref, demoMode = false, children }: DriverShellProps) {
   const pathname = usePathname();
   const router = useRouter();
   const { language, setLanguage, t } = useLanguage();
 
   const handleLogout = async () => {
+    if (demoMode) {
+      router.replace('/driver');
+      router.refresh();
+      return;
+    }
+
     const supabase = createClient();
     await supabase.auth.signOut();
     router.replace('/driver/login');
@@ -63,7 +70,7 @@ export function DriverShell({ driverName, activeStopHref, children }: DriverShel
               className="flex min-h-8 items-center gap-1 rounded-full bg-[#1A2440] px-3 text-xs font-semibold text-slate-200"
             >
               <LogOut className="h-3.5 w-3.5" />
-              {t('driver.auth.logout')}
+              {demoMode ? 'Demo' : t('driver.auth.logout')}
             </button>
           </div>
         </header>

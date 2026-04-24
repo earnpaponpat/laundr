@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
+import { getDemoDriverStopDetail } from '@/lib/driver/demo';
 import { canUseDriverApp, getDriverContext } from '@/lib/driver/context';
 
 const schema = z.object({
@@ -27,6 +28,38 @@ export async function POST(
 
     if (!canUseDriverApp(ctx.role)) {
       return NextResponse.json({ error: 'forbidden' }, { status: 403 });
+    }
+
+    if (ctx.demoMode || !ctx.supabase) {
+      const detail = getDemoDriverStopDetail(stopId);
+      if (!detail) {
+        return NextResponse.json({ error: 'stop_not_found' }, { status: 404 });
+      }
+
+      const results = parsed.data.tags.map((tag, index) => {
+        const itemLine = detail.items[index % Math.max(detail.items.length, 1)];
+        return {
+          rfid_tag_id: tag,
+          result: 'added' as const,
+          item: {
+            category_name: itemLine?.category_name || 'Demo SKU',
+            status: parsed.data.scan_type === 'deliver' ? 'out' : 'dirty',
+          },
+        };
+      });
+
+      return NextResponse.json({
+        results,
+        running_totals: {
+          session_count: parsed.data.tags.length,
+          delivered_count: parsed.data.scan_type === 'deliver'
+            ? detail.stop.delivered_count + parsed.data.tags.length
+            : detail.stop.delivered_count,
+          collected_count: parsed.data.scan_type === 'collect'
+            ? detail.stop.collected_count + parsed.data.tags.length
+            : detail.stop.collected_count,
+        },
+      });
     }
 
     const { data: stop } = await ctx.supabase

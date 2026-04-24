@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 
+const driverDemoBypassEnabled = process.env.NEXT_PUBLIC_DRIVER_DEMO_BYPASS !== 'false';
+
 function buildSupabase(request: NextRequest, response: NextResponse) {
   return createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -37,6 +39,10 @@ export async function middleware(request: NextRequest) {
   const userId = authData.user?.id;
 
   if (!userId) {
+    if (driverDemoBypassEnabled && isDriverPath) {
+      return response;
+    }
+
     if (isDriverPath && pathname !== '/driver/login') {
       const redirectUrl = request.nextUrl.clone();
       redirectUrl.pathname = '/driver/login';

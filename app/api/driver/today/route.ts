@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getDemoDriverTodayPayload } from '@/lib/driver/demo';
 import { canUseDriverApp, getDriverContext } from '@/lib/driver/context';
 
 export async function GET(req: NextRequest) {
@@ -10,6 +11,10 @@ export async function GET(req: NextRequest) {
 
     if (!canUseDriverApp(ctx.role)) {
       return NextResponse.json({ error: 'forbidden' }, { status: 403 });
+    }
+
+    if (ctx.demoMode || !ctx.supabase) {
+      return NextResponse.json(getDemoDriverTodayPayload());
     }
 
     const scope = req.nextUrl.searchParams.get('scope');

@@ -1,13 +1,15 @@
 import { createClient } from '@/lib/supabase/server';
+import { getDemoDriverProfile, isDriverDemoBypassEnabled } from '@/lib/driver/demo';
 
 export type DriverRole = 'admin' | 'manager' | 'staff' | 'driver';
 
 export type DriverContext = {
-  supabase: Awaited<ReturnType<typeof createClient>>;
+  supabase: Awaited<ReturnType<typeof createClient>> | null;
   userId: string;
   orgId: string;
   role: DriverRole;
   fullName: string;
+  demoMode?: boolean;
 };
 
 export async function getDriverContext(): Promise<DriverContext | null> {
@@ -16,7 +18,19 @@ export async function getDriverContext(): Promise<DriverContext | null> {
   const userId = authData.user?.id;
 
   if (!userId) {
-    return null;
+    if (!isDriverDemoBypassEnabled()) {
+      return null;
+    }
+
+    const driver = getDemoDriverProfile();
+    return {
+      supabase: null,
+      userId: driver.id,
+      orgId: '00000000-0000-0000-0000-000000000001',
+      role: 'driver',
+      fullName: driver.full_name,
+      demoMode: true,
+    };
   }
 
   const { data: profile } = await supabase

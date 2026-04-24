@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { Truck } from 'lucide-react';
 import { redirect } from 'next/navigation';
 import { cookies } from 'next/headers';
+import { getDemoDriverTodayPayload } from '@/lib/driver/demo';
 import { canUseDriverApp, getDriverContext } from '@/lib/driver/context';
 import { translations } from '@/lib/i18n/translations';
 
@@ -25,6 +26,69 @@ export default async function DriverTodayPage() {
   const ctx = await getDriverContext();
   if (!ctx) redirect('/driver/login');
   if (!canUseDriverApp(ctx.role)) redirect('/dashboard');
+
+  if (ctx.demoMode || !ctx.supabase) {
+    const demo = getDemoDriverTodayPayload();
+    const todayDate = new Date();
+    const totalStops = demo.trips.flatMap((trip) => trip.stops).length;
+    const totalItems = demo.trips.flatMap((trip) => trip.stops).reduce((sum, stop) => sum + stop.expected_deliver_count, 0);
+    const dateLabel = lang === 'th' ? thaiDateLabel(todayDate) : englishDateLabel(todayDate);
+
+    const statusStyle: Record<string, string> = {
+      pending: 'bg-slate-700 text-slate-200',
+      active: 'bg-indigo-500 text-white animate-pulse',
+      completed: 'bg-emerald-500 text-white',
+    };
+
+    const stopRows = demo.trips.flatMap((trip) => trip.stops);
+
+    return (
+      <div className="space-y-4 pb-4">
+        <div className="rounded-2xl bg-[#17213B] p-4">
+          <h1 className="text-2xl font-bold">{text.today.todayLabel} — {dateLabel}</h1>
+          <p className="mt-2 text-sm text-slate-300">
+            {totalStops} {text.today.stops} · {totalItems} {text.today.items}
+          </p>
+        </div>
+
+        <div className="space-y-3">
+          {stopRows.map((stop) => (
+            <Link
+              key={stop.id}
+              href={`/driver/stop/${stop.id}`}
+              className="block rounded-2xl border border-white/10 bg-[#17213B] p-4 active:scale-[0.99]"
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="text-2xl font-semibold leading-tight">
+                    {stop.stop_no} {stop.client_name}
+                  </p>
+                  <p className="mt-2 text-lg text-slate-200">
+                    {text.today.deliver} {stop.expected_deliver_count} {text.today.items}
+                    {stop.expected_collect_count > 0
+                      ? ` · ${text.today.collect} ${stop.expected_collect_count}`
+                      : ''}
+                  </p>
+                </div>
+                <span className={`rounded-full px-3 py-1 text-sm font-semibold ${statusStyle[stop.status] || statusStyle.pending}`}>
+                  {stop.status === 'completed'
+                    ? text.today.completed
+                    : stop.status === 'active'
+                      ? text.today.active
+                      : text.today.pending}
+                </span>
+              </div>
+              {stop.status !== 'completed' ? (
+                <div className="mt-4 text-right text-lg font-semibold text-indigo-300">
+                  {text.today.start} →
+                </div>
+              ) : null}
+            </Link>
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   const todayDate = new Date();
   const today = todayDate.toISOString().slice(0, 10);

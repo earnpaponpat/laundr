@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation';
 import { DriverShell } from '@/components/driver/DriverShell';
+import { getDemoDriverActiveStopHref } from '@/lib/driver/demo';
 import { canUseDriverApp, getDriverContext } from '@/lib/driver/context';
 
 export default async function DriverLayout({
@@ -15,6 +16,14 @@ export default async function DriverLayout({
 
   if (!canUseDriverApp(ctx.role)) {
     redirect('/dashboard');
+  }
+
+  if (ctx.demoMode || !ctx.supabase) {
+    return (
+      <DriverShell driverName={ctx.fullName} activeStopHref={getDemoDriverActiveStopHref()} demoMode>
+        {children}
+      </DriverShell>
+    );
   }
 
   const today = new Date().toISOString().slice(0, 10);
@@ -42,7 +51,7 @@ export default async function DriverLayout({
   const activeStopHref = activeStop?.id ? `/driver/stop/${activeStop.id}` : '/driver';
 
   return (
-    <DriverShell driverName={ctx.fullName} activeStopHref={activeStopHref}>
+    <DriverShell driverName={ctx.fullName} activeStopHref={activeStopHref} demoMode={Boolean(ctx.demoMode)}>
       {children}
     </DriverShell>
   );

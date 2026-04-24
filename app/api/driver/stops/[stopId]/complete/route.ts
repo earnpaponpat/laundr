@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
+import { getDemoDriverStopDetail } from '@/lib/driver/demo';
 import { canUseDriverApp, getDriverContext } from '@/lib/driver/context';
 
 const schema = z.object({
@@ -28,6 +29,25 @@ export async function POST(
 
     if (!canUseDriverApp(ctx.role)) {
       return NextResponse.json({ error: 'forbidden' }, { status: 403 });
+    }
+
+    if (ctx.demoMode || !ctx.supabase) {
+      const detail = getDemoDriverStopDetail(stopId);
+      if (!detail) {
+        return NextResponse.json({ error: 'stop_not_found' }, { status: 404 });
+      }
+
+      const deliveredTags = Array.from(new Set(parsed.data.delivered_tags));
+      const collectedTags = Array.from(new Set(parsed.data.collected_tags));
+      const collectedSet = new Set(collectedTags);
+      const missingCount = deliveredTags.filter((tag) => !collectedSet.has(tag)).length;
+
+      return NextResponse.json({
+        success: true,
+        missing_count: missingCount,
+        production_batch_id: `demo-production-${detail.stop.id}`,
+        inbound_batch_id: `demo-inbound-${detail.stop.id}`,
+      });
     }
 
     const { data: stop } = await ctx.supabase

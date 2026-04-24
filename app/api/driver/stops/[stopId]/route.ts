@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { getDemoDriverStopDetail } from '@/lib/driver/demo';
 import { canUseDriverApp, getDriverContext } from '@/lib/driver/context';
 
 export async function GET(
@@ -15,6 +16,14 @@ export async function GET(
 
     if (!canUseDriverApp(ctx.role)) {
       return NextResponse.json({ error: 'forbidden' }, { status: 403 });
+    }
+
+    if (ctx.demoMode || !ctx.supabase) {
+      const detail = getDemoDriverStopDetail(stopId);
+      if (!detail) {
+        return NextResponse.json({ error: 'stop_not_found' }, { status: 404 });
+      }
+      return NextResponse.json(detail);
     }
 
     const { data: stop, error: stopError } = await ctx.supabase

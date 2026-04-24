@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
@@ -9,10 +9,17 @@ import { useLanguage } from '@/lib/i18n/LanguageContext';
 export default function DriverLoginPage() {
   const router = useRouter();
   const { t } = useLanguage();
+  const demoBypass = process.env.NEXT_PUBLIC_DRIVER_DEMO_BYPASS !== 'false';
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  useEffect(() => {
+    if (!demoBypass) return;
+    router.replace('/driver');
+    router.refresh();
+  }, [demoBypass, router]);
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -34,6 +41,20 @@ export default function DriverLoginPage() {
       setLoading(false);
     }
   };
+
+  if (demoBypass) {
+    return (
+      <div className="flex min-h-[80vh] items-center justify-center px-4 py-6">
+        <div className="w-full max-w-md space-y-4 rounded-2xl border border-white/10 bg-[#17213B] p-5 text-center">
+          <h1 className="text-2xl font-bold text-white">{t('driver.auth.loginTitle')}</h1>
+          <p className="text-sm text-slate-300">Opening driver demo…</p>
+          <div className="flex justify-center">
+            <Loader2 className="h-6 w-6 animate-spin text-indigo-300" />
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-h-[80vh] items-center justify-center px-4 py-6">
