@@ -48,6 +48,7 @@ export async function POST(
 
     const results = await addItemsToBatch({
       session_id: parsed.data.session_id,
+      order_id: orderId,
       rfid_tag_ids: parsed.data.tags,
       org_id: orgId,
       overrides: parsed.data.overrides,
