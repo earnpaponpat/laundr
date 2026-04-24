@@ -2,11 +2,15 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
+import { createClient } from "@/lib/supabase/client";
 import {
   LayoutDashboard,
   Package,
+  ClipboardList,
+  Factory,
   GitCompare,
   RefreshCw,
   Truck,
@@ -20,6 +24,30 @@ import {
 export function Sidebar() {
   const pathname = usePathname();
   const { t } = useLanguage();
+  const [ordersBadge, setOrdersBadge] = useState(0);
+
+  useEffect(() => {
+    const loadOrdersBadge = async () => {
+      const supabase = createClient();
+      const { data: orgData } = await supabase.rpc('get_current_org_id');
+      const orgId = orgData || (await supabase.from('organizations').select('id').limit(1).single()).data?.id;
+      if (!orgId) return;
+
+      const { count, error: countError } = await supabase
+        .from('delivery_orders')
+        .select('*', { count: 'exact', head: true })
+        .eq('org_id', orgId)
+        .in('status', ['picking', 'ready']);
+
+      if (countError) {
+        console.error('[Sidebar] badge load failed:', countError.message);
+        return;
+      }
+      setOrdersBadge(count || 0);
+    };
+
+    loadOrdersBadge();
+  }, []);
 
   const menuGroups = [
     {
@@ -32,6 +60,8 @@ export function Sidebar() {
       group: t('nav.groups.operations'),
       items: [
         { name: t('nav.inventory'), href: '/inventory', icon: Package },
+        { name: t('nav.orders'), href: '/orders', icon: ClipboardList, badge: ordersBadge },
+        { name: t('nav.production'), href: '/production', icon: Factory },
         { name: t('nav.reconcile'), href: '/reconcile', icon: GitCompare },
         { name: t('nav.rewash'), href: '/rewash', icon: RefreshCw },
         { name: t('nav.logistics'), href: '/routes', icon: Truck },
@@ -41,7 +71,7 @@ export function Sidebar() {
       group: t('nav.groups.management'),
       items: [
         { name: t('nav.billing'), href: '/billing', icon: Receipt },
-        { name: t('nav.simulator'), href: '/dev/simulator', icon: Cpu },
+        { name: t('nav.simulator'), href: '/simulator', icon: Cpu },
         { name: t('nav.settings'), href: '/settings', icon: Settings2 },
       ],
     },
@@ -71,7 +101,7 @@ export function Sidebar() {
             </h3>
             <div className="space-y-0.5">
               {group.items.map((item) => {
-                const isActive = pathname === item.href;
+                const isActive = item.href === '/' ? pathname === '/' : pathname.startsWith(item.href);
                 return (
                   <Link
                     key={item.href}
@@ -91,7 +121,12 @@ export function Sidebar() {
                       isActive ? "text-indigo-600" : "text-slate-400 group-hover:text-slate-600"
                     )} />
                     {item.name}
-                    {isActive && <ChevronRight className="ml-auto w-3 h-3 text-indigo-500/50" />}
+                    {typeof item.badge === 'number' && item.badge > 0 ? (
+                      <span className="ml-auto text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700">
+                        {item.badge}
+                      </span>
+                    ) : null}
+                    {isActive && <ChevronRight className={cn("w-3 h-3 text-indigo-500/50", typeof item.badge === 'number' && item.badge > 0 ? "ml-1" : "ml-auto")} />}
                   </Link>
                 );
               })}

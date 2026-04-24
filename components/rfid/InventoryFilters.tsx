@@ -86,8 +86,12 @@ export function InventoryFilters({ categories, clients }: FilterProps) {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All</SelectItem>
-            <SelectItem value="in_stock">In Stock</SelectItem>
-            <SelectItem value="out">Out</SelectItem>
+            <SelectItem value="clean">Clean / Ready</SelectItem>
+            <SelectItem value="out">Out with Client</SelectItem>
+            <SelectItem value="dirty">Dirty (Returned)</SelectItem>
+            <SelectItem value="washing">Washing</SelectItem>
+            <SelectItem value="drying">Drying</SelectItem>
+            <SelectItem value="folding">Folding / QC</SelectItem>
             <SelectItem value="rewash">Rewash</SelectItem>
             <SelectItem value="rejected">Rejected</SelectItem>
             <SelectItem value="lost">Lost</SelectItem>

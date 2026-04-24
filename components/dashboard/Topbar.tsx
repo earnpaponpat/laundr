@@ -13,6 +13,8 @@ export function Topbar() {
   const getPageTitle = (path: string): string => {
     if (path === '/') return t('topbar.pageTitles.home');
     if (path === '/inventory') return t('topbar.pageTitles.inventory');
+    if (path.startsWith('/orders')) return t('topbar.pageTitles.orders');
+    if (path.startsWith('/production')) return t('topbar.pageTitles.production');
     if (path === '/reconcile') return t('topbar.pageTitles.reconcile');
     if (path === '/rewash') return t('topbar.pageTitles.rewash');
     if (path === '/routes') return t('topbar.pageTitles.routes');

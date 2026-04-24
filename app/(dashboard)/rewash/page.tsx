@@ -7,6 +7,7 @@ import { AddRewashDialog } from '@/components/rfid/AddRewashDialog';
 import { HeaderActions } from '@/components/dashboard/HeaderActions';
 import { startOfMonth } from 'date-fns';
 import { RewashChartsWrapper } from '@/components/rfid/RewashChartsWrapper';
+import { getDemoData } from '@/lib/demo/server-data';
 
 export const metadata = {
   title: 'Rewash & Damage | Laundr',
@@ -15,6 +16,7 @@ export const metadata = {
 export default async function RewashPage() {
   const supabase = await createClient();
   const { t } = await getServerT();
+  const demoData = getDemoData();
 
   const { data: orgData } = await supabase.rpc('get_current_org_id');
   const orgId = orgData || (await supabase.from('organizations').select('id').limit(1).single()).data?.id;
@@ -45,7 +47,8 @@ export default async function RewashPage() {
       .order('created_at', { ascending: false })
   ]);
 
-  const records = allRecords || [];
+  const records = allRecords && allRecords.length > 0 ? allRecords : demoData.rewashRecords;
+  const useDemoData = !allRecords || allRecords.length === 0;
   let extraCostThisMonth = 0;
   records.forEach(r => {
     if (new Date(r.created_at).getTime() >= new Date(firstDayOfMonth).getTime()) {
@@ -61,9 +64,9 @@ export default async function RewashPage() {
   const activeQueue = records.filter(r => !r.resolved);
 
   const stats = [
-    { label: t('rewash.inQueue'), value: inQueue || 0, icon: RefreshCw, bg: 'bg-slate-50', iconColor: 'text-slate-400' },
-    { label: t('rewash.rejectedMonth'), value: rejectedThisMonth || 0, icon: AlertTriangle, bg: 'bg-red-50', iconColor: 'text-red-500' },
-    { label: t('rewash.reclaimed'), value: reclaimedThisMonth || 0, icon: PackageCheck, bg: 'bg-emerald-50', iconColor: 'text-emerald-500' },
+    { label: t('rewash.inQueue'), value: useDemoData ? activeQueue.length : (inQueue || 0), icon: RefreshCw, bg: 'bg-slate-50', iconColor: 'text-slate-400' },
+    { label: t('rewash.rejectedMonth'), value: useDemoData ? records.filter(r => r.resolved && r.linen_items?.status === 'rejected').length : (rejectedThisMonth || 0), icon: AlertTriangle, bg: 'bg-red-50', iconColor: 'text-red-500' },
+    { label: t('rewash.reclaimed'), value: useDemoData ? records.filter(r => r.resolved).length : (reclaimedThisMonth || 0), icon: PackageCheck, bg: 'bg-emerald-50', iconColor: 'text-emerald-500' },
   ];
 
   return (

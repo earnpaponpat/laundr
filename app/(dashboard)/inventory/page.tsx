@@ -6,6 +6,7 @@ import { InventoryFilters } from '@/components/rfid/InventoryFilters';
 import { InventoryTable } from '@/components/rfid/InventoryTable';
 import { HeaderActions } from '@/components/dashboard/HeaderActions';
 import { Layers, PackageCheck, Truck, AlertTriangle } from 'lucide-react';
+import { getDemoInventoryView } from '@/lib/demo/server-data';
 
 export const metadata = {
   title: 'Inventory | Laundr',
@@ -42,8 +43,8 @@ export default async function InventoryPage({
     supabase.from('linen_categories').select('id, name').eq('org_id', orgId),
     supabase.from('clients').select('id, name').eq('org_id', orgId),
     supabase.from('linen_items').select('*', { count: 'exact', head: true }).eq('org_id', orgId),
-    supabase.from('linen_items').select('*', { count: 'exact', head: true }).eq('org_id', orgId).eq('status', 'in_stock'),
-    supabase.from('linen_items').select('*', { count: 'exact', head: true }).eq('org_id', orgId).in('status', ['out', 'in_transit']),
+    supabase.from('linen_items').select('*', { count: 'exact', head: true }).eq('org_id', orgId).eq('status', 'clean'),
+    supabase.from('linen_items').select('*', { count: 'exact', head: true }).eq('org_id', orgId).eq('status', 'out'),
     supabase.from('linen_items').select('*', { count: 'exact', head: true }).eq('org_id', orgId).gte('wash_count', 160)
   ]);
 
@@ -68,11 +69,23 @@ export default async function InventoryPage({
 
   const { data: items, count: filteredCount } = await query;
 
+  const useDemoData = !orgId || !items?.length;
+  const demoInventory = useDemoData
+    ? getDemoInventoryView({ q, status, categoryId, clientId, cycle, page, pageSize })
+    : null;
+  const displayCategories = useDemoData ? demoInventory!.categories : (categories || []);
+  const displayClients = useDemoData ? demoInventory!.clients : (clients || []);
+  const displayItems = useDemoData ? demoInventory!.items : (items || []);
+  const displayTotal = useDemoData ? demoInventory!.totalItems : (totalItems || 0);
+  const displayInStock = useDemoData ? demoInventory!.inStock : (inStock || 0);
+  const displayOut = useDemoData ? demoInventory!.outItems : (outItems || 0);
+  const displayNearEol = useDemoData ? demoInventory!.nearEol : (nearEol || 0);
+
   const stats = [
-    { label: t('inventory.stats.totalItems'), value: totalItems, icon: Layers, bg: 'bg-slate-50', iconColor: 'text-slate-400' },
-    { label: t('inventory.stats.inHouse'), value: inStock, icon: PackageCheck, bg: 'bg-emerald-50', iconColor: 'text-emerald-500' },
-    { label: t('inventory.stats.outWithClients'), value: outItems, icon: Truck, bg: 'bg-indigo-50', iconColor: 'text-indigo-500' },
-    { label: t('inventory.stats.requiresAttention'), value: nearEol, icon: AlertTriangle, bg: 'bg-orange-50', iconColor: 'text-orange-500', sub: t('inventory.stats.items160washes') },
+    { label: t('inventory.stats.totalItems'), value: displayTotal, icon: Layers, bg: 'bg-slate-50', iconColor: 'text-slate-400' },
+    { label: t('inventory.stats.inHouse'), value: displayInStock, icon: PackageCheck, bg: 'bg-emerald-50', iconColor: 'text-emerald-500' },
+    { label: t('inventory.stats.outWithClients'), value: displayOut, icon: Truck, bg: 'bg-indigo-50', iconColor: 'text-indigo-500' },
+    { label: t('inventory.stats.requiresAttention'), value: displayNearEol, icon: AlertTriangle, bg: 'bg-orange-50', iconColor: 'text-orange-500', sub: t('inventory.stats.items160washes') },
   ];
 
   return (
@@ -105,13 +118,13 @@ export default async function InventoryPage({
       <div className="space-y-4">
         <h3 className="text-sm font-semibold text-slate-700 uppercase tracking-wide">{t('inventory.detailedList')}</h3>
         <Suspense fallback={<Skeleton className="h-[72px] w-full rounded-xl" />}>
-          <InventoryFilters categories={categories || []} clients={clients || []} />
+          <InventoryFilters categories={displayCategories} clients={displayClients} />
         </Suspense>
         <Suspense fallback={<Skeleton className="h-[500px] w-full rounded-xl" />}>
           <InventoryTable
-            items={items || []}
+            items={displayItems}
             page={page}
-            totalCount={filteredCount || 0}
+            totalCount={useDemoData ? demoInventory!.filteredCount : (filteredCount || 0)}
             pageSize={pageSize}
           />
         </Suspense>

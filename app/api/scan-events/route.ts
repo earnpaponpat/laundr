@@ -1,34 +1,49 @@
 import { NextResponse } from 'next/server';
-import { scanEventSchema, processScanEvent } from '@/lib/rfid/scan-processor';
+import { processScanEventsBatch, scanBatchSchema } from '@/lib/rfid/scan-processor';
 
 export async function POST(req: Request) {
   try {
     const body = await req.json();
+    const normalizedBody =
+      body && Array.isArray(body.events)
+        ? body
+        : {
+            events: [
+              {
+                rfid_tag_id: body?.rfid_tag_id,
+                gate_id: body?.gate_id,
+                event_type: body?.event_type,
+                batch_id: body?.batch_id ?? null,
+                order_id: body?.order_id ?? null,
+                weight_kg: body?.weight_kg ?? null,
+              },
+            ],
+            org_id: body?.org_id,
+            source: body?.source,
+            session_id: body?.session_id,
+          };
+    const validation = scanBatchSchema.safeParse(normalizedBody);
 
-    // 1. Zod Validation
-    const validationResult = scanEventSchema.safeParse(body);
-    if (!validationResult.success) {
+    if (!validation.success) {
       return NextResponse.json(
-        { 
-          success: false, 
-          error: 'Validation Error', 
-          details: validationResult.error.format() 
+        {
+          success: false,
+          error: 'validation_error',
+          details: validation.error.flatten(),
         },
         { status: 400 }
       );
     }
 
-    // Process the scan event via business logic
-    const result = await processScanEvent(validationResult.data);
-    
-    // Status 200 is returned even for logical warnings like unknown_tag 
-    // to prevent hardware clients from assuming network/server failure.
-    return NextResponse.json(result, { status: 200 });
-
-  } catch (err: any) {
-    console.error('Scan Event Processor Error:', err);
+    // NOTE: Supabase JS does not provide a true multi-statement transaction API from this route.
+    // This processes the batch in one request and returns per-tag results in order.
+    const results = await processScanEventsBatch(validation.data);
+    return NextResponse.json({ success: true, results }, { status: 200 });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Internal Server Error';
+    console.error('Scan events batch processor error:', message);
     return NextResponse.json(
-      { success: false, error: 'Internal Server Error' },
+      { success: false, error: 'internal_server_error' },
       { status: 500 }
     );
   }

@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server';
 import { getServerT } from '@/lib/i18n/server';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
+import { getDemoData } from '@/lib/demo/server-data';
 
 export async function ClientStatusList() {
   const supabase = await createClient();
@@ -39,6 +40,8 @@ export async function ClientStatusList() {
     return { ...client, returnRate: rate, inCount, outCount };
   }));
 
+  const displayStats = clientStats.length > 0 ? clientStats : getDemoData().clientStats;
+
   return (
     <Card className="h-full flex flex-col">
       <CardHeader className="pb-2">
@@ -46,7 +49,7 @@ export async function ClientStatusList() {
       </CardHeader>
       <CardContent className="flex-1 overflow-auto">
         <div className="space-y-4">
-          {clientStats.map(client => {
+          {displayStats.map(client => {
             let colorClass = "bg-green-500";
             if (client.returnRate < 90) colorClass = "bg-red-500";
             else if (client.returnRate < 98) colorClass = "bg-amber-500";

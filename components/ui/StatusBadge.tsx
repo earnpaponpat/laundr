@@ -12,23 +12,43 @@ export function StatusBadge({ status, className }: StatusBadgeProps) {
   
   const getConfig = (val: string) => {
     switch (val) {
-      case 'IN_STOCK':
-      case 'IN STOCK':
+      case 'CLEAN':
       case 'CHECKIN':
       case 'COMPLETED':
+      case 'QC_PASS':
         return "bg-emerald-100 text-emerald-800 border-emerald-300";
       case 'OUT':
       case 'CHECKOUT':
+      case 'DISPATCH':
+      case 'DISPATCHED':
       case 'ACTIVE':
         return "bg-indigo-100 text-indigo-800 border-indigo-300";
+      case 'DIRTY':
+        return "bg-orange-50 text-orange-700 border-orange-200";
+      case 'WASHING':
+      case 'WASH_START':
+      case 'WASH_DONE':
+        return "bg-cyan-50 text-cyan-700 border-cyan-200";
+      case 'DRYING':
+      case 'DRY_DONE':
+        return "bg-sky-50 text-sky-700 border-sky-200";
+      case 'FOLDING':
+        return "bg-violet-50 text-violet-700 border-violet-200";
       case 'REWASH':
+      case 'QC_REWASH':
         return "bg-amber-50 text-amber-700 border-amber-200";
       case 'REJECTED':
       case 'REJECT':
+      case 'QC_REJECT':
         return "bg-red-50 text-red-700 border-red-200";
       case 'LOST':
+        return "bg-slate-200 text-slate-600 border-slate-300";
       case 'PENDING':
+      case 'DRAFT':
         return "bg-slate-100 text-slate-600 border-slate-200";
+      case 'PICKING':
+      case 'READY':
+        return "bg-yellow-50 text-yellow-700 border-yellow-200";
       default:
         return "bg-slate-50 text-slate-500 border-slate-200";
     }

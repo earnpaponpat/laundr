@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server';
 import { getServerT } from '@/lib/i18n/server';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
+import { getDemoData } from '@/lib/demo/server-data';
 
 export async function WashCycleTracker() {
   const supabase = await createClient();
@@ -28,6 +29,8 @@ export async function WashCycleTracker() {
     return { ...cat, nearEOLCount, totalCount, percentage };
   }));
 
+  const displayStats = stats.length > 0 ? stats : getDemoData().washCycleStats;
+
   return (
     <Card className="h-full flex flex-col overflow-hidden">
       <CardHeader className="pb-2 shrink-0">
@@ -36,24 +39,20 @@ export async function WashCycleTracker() {
         </CardTitle>
       </CardHeader>
       <CardContent className="flex-1 overflow-y-auto pb-4">
-        {stats.length === 0 ? (
-          <p className="text-sm text-slate-400 text-center py-6">{t('ai.noCategoryData')}</p>
-        ) : (
-          <div className="space-y-4">
-            {stats.map(stat => (
-              <div key={stat.id} className="space-y-1.5">
-                <div className="flex justify-between items-center text-sm font-medium">
-                  <span className="truncate pr-2 text-slate-700">{stat.name}</span>
-                  <span className={`text-xs font-bold tabular-nums ${stat.percentage > 20 ? 'text-red-500' : 'text-slate-500'}`}>
-                    {stat.nearEOLCount} {t('ai.items')}
-                  </span>
-                </div>
-                <Progress value={stat.percentage} indicatorClassName="bg-amber-500" />
-                <p className="text-xs text-slate-400">{stat.percentage}{t('ai.nearEol')}</p>
+        <div className="space-y-4">
+          {displayStats.map(stat => (
+            <div key={stat.id} className="space-y-1.5">
+              <div className="flex justify-between items-center text-sm font-medium">
+                <span className="truncate pr-2 text-slate-700">{stat.name}</span>
+                <span className={`text-xs font-bold tabular-nums ${stat.percentage > 20 ? 'text-red-500' : 'text-slate-500'}`}>
+                  {stat.nearEOLCount} {t('ai.items')}
+                </span>
               </div>
-            ))}
-          </div>
-        )}
+              <Progress value={stat.percentage} indicatorClassName="bg-amber-500" />
+              <p className="text-xs text-slate-400">{stat.percentage}{t('ai.nearEol')}</p>
+            </div>
+          ))}
+        </div>
       </CardContent>
     </Card>
   );

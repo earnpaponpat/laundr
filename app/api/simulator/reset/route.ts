@@ -13,61 +13,22 @@ export async function POST() {
       return NextResponse.json({ error: 'No organization found' }, { status: 400 });
     }
 
-    // 1. Snapshot before deleting
-    const [
-      { count: scanCount },
-      { count: routeCount },
-      { count: invoiceCount },
-      { count: rewashCount },
-      { count: batchCount },
-    ] = await Promise.all([
-      supabase.from('scan_events').select('*', { count: 'exact', head: true }).eq('org_id', orgId),
-      supabase.from('routes').select('*', { count: 'exact', head: true }).eq('org_id', orgId),
-      supabase.from('invoices').select('*', { count: 'exact', head: true }).eq('org_id', orgId),
-      supabase.from('rewash_records').select('*', { count: 'exact', head: true }).eq('org_id', orgId),
-      supabase.from('delivery_batches').select('*', { count: 'exact', head: true }).eq('org_id', orgId),
-    ]);
+    const { data: userData } = await supabase.auth.getUser();
+    const userId = userData.user?.id;
 
-    // 2. Log the reset
-    await supabase.from('simulator_logs').insert({
-      org_id: orgId,
-      action: 'database_reset',
-      snapshot: {
-        scan_events: scanCount,
-        routes: routeCount,
-        invoices: invoiceCount,
-        rewash_records: rewashCount,
-        delivery_batches: batchCount,
-      },
+    // Call the heavy-duty reset and seed procedure
+    const { data, error } = await supabase.rpc('reset_to_default', { 
+      p_org_id: orgId,
+      p_user_id: userId
     });
 
-    // 3. Delete in correct FK order
-    await supabase.from('rewash_records').delete().eq('org_id', orgId);
-    await supabase.from('delivery_batches').delete().eq('org_id', orgId);
-    await supabase.from('scan_events').delete().eq('org_id', orgId);
-    await supabase.from('routes').delete().eq('org_id', orgId);
-    await supabase.from('invoices').delete().eq('org_id', orgId);
-
-    // 4. Reset linen_items to in_stock (keep wash_count)
-    await supabase
-      .from('linen_items')
-      .update({
-        status: 'in_stock',
-        client_id: null,
-        last_scan_at: null,
-        last_scan_location: null,
-      })
-      .eq('org_id', orgId);
+    if (error) {
+      throw error;
+    }
 
     return NextResponse.json({
       success: true,
-      deleted: {
-        scan_events: scanCount,
-        routes: routeCount,
-        invoices: invoiceCount,
-        rewash_records: rewashCount,
-        delivery_batches: batchCount,
-      },
+      data: data
     });
 
   } catch (err: unknown) {

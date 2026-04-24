@@ -5,6 +5,7 @@ import { NewRouteDialog } from "@/components/dashboard/NewRouteDialog";
 import { HeaderActions } from "@/components/dashboard/HeaderActions";
 import { Truck, MapPin, CheckCircle, Package } from "lucide-react";
 import { startOfDay, endOfDay } from "date-fns";
+import { getDemoData } from "@/lib/demo/server-data";
 
 export const metadata = {
   title: 'Logistics & Routes | Laundr',
@@ -13,6 +14,7 @@ export const metadata = {
 export default async function RoutesPage() {
   const supabase = await createClient();
   const { t } = await getServerT();
+  const demoData = getDemoData();
 
   const { data: orgData } = await supabase.rpc('get_current_org_id');
   const orgId = orgData || (await supabase.from('organizations').select('id').limit(1).single()).data?.id;
@@ -27,11 +29,12 @@ export default async function RoutesPage() {
     .gte('scheduled_at', todayStart)
     .lte('scheduled_at', todayEnd)
     .order('scheduled_at', { ascending: true });
+  const displayRoutes = routes && routes.length > 0 ? routes : demoData.routes;
 
-  const activeCount = routes?.filter(r => r.status === 'active').length || 0;
-  const completedCount = routes?.filter(r => r.status === 'completed').length || 0;
-  const totalStops = routes?.reduce((acc, r) => acc + (Array.isArray(r.stops) ? r.stops.length : 0), 0) || 0;
-  const totalItems = routes?.reduce((acc, r) => {
+  const activeCount = displayRoutes.filter(r => r.status === 'active').length || 0;
+  const completedCount = displayRoutes.filter(r => r.status === 'completed').length || 0;
+  const totalStops = displayRoutes.reduce((acc, r) => acc + (Array.isArray(r.stops) ? r.stops.length : 0), 0) || 0;
+  const totalItems = displayRoutes.reduce((acc, r) => {
     const stops = Array.isArray(r.stops) ? r.stops : [];
     return acc + stops.reduce((a: number, s: { item_count?: number }) => a + (s.item_count || 0), 0);
   }, 0) || 0;
@@ -68,10 +71,10 @@ export default async function RoutesPage() {
       <div className="space-y-4">
         <h3 className="text-sm font-bold uppercase text-slate-400 tracking-widest">{t('routes.liveMonitor')}</h3>
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {(routes || []).map(route => (
+          {displayRoutes.map(route => (
             <RouteDetailSheetWrapper key={route.id} route={route} />
           ))}
-          {(!routes || routes.length === 0) && (
+          {displayRoutes.length === 0 && (
             <div className="col-span-full py-12 bg-slate-50 border-2 border-dashed rounded-2xl text-center text-slate-400">
               <Truck className="w-12 h-12 mx-auto mb-3 opacity-20" />
               <p className="font-medium">{t('routes.noRoutesToday')}</p>

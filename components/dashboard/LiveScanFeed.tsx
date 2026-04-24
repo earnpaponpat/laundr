@@ -10,6 +10,7 @@ import { useLanguage } from '@/lib/i18n/LanguageContext';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { Activity, ArrowDownToLine, ArrowUpFromLine, RefreshCw, ScanLine } from 'lucide-react';
+import { DEMO_SCAN_EVENTS } from '@/lib/demo/dashboard';
 
 export function LiveScanFeed() {
   const { t } = useLanguage();
@@ -25,7 +26,10 @@ export function LiveScanFeed() {
   useEffect(() => { orgIdRef.current = contextOrgId; }, [contextOrgId]);
 
   useEffect(() => {
-    if (!contextOrgId) return;
+    if (!contextOrgId) {
+      setEvents(DEMO_SCAN_EVENTS);
+      return;
+    }
     let mounted = true;
 
     async function init() {
@@ -46,7 +50,7 @@ export function LiveScanFeed() {
         .order('created_at', { ascending: false })
         .limit(20);
 
-      if (mounted) setEvents(data || []);
+      if (mounted) setEvents(data?.length ? data : DEMO_SCAN_EVENTS);
     }
 
     init();

@@ -13,6 +13,7 @@ import { GenerateInvoiceDialog } from "@/components/dashboard/GenerateInvoiceDia
 import { InvoiceSheet } from "@/components/dashboard/InvoiceSheet";
 import { HeaderActions } from "@/components/dashboard/HeaderActions";
 import { format } from "date-fns";
+import { DEMO_INVOICES } from "@/lib/demo/dashboard";
 
 export default function BillingPage() {
   const { t } = useLanguage();
@@ -22,6 +23,7 @@ export default function BillingPage() {
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [loadError, setLoadError] = useState("");
 
   useEffect(() => { loadInvoices(); }, []);
 
@@ -30,25 +32,37 @@ export default function BillingPage() {
     try {
       const res = await fetch("/api/billing/invoices");
       const data = await res.json();
-      setInvoices(data || []);
+      if (Array.isArray(data)) {
+        setInvoices(data);
+        setLoadError("");
+      } else {
+        setInvoices(DEMO_INVOICES);
+        setLoadError(data?.error || "billing_demo_mode");
+      }
     } catch (err) {
       console.error(err);
+      setInvoices(DEMO_INVOICES);
+      setLoadError(err instanceof Error ? err.message : "billing_demo_mode");
     }
     setLoading(false);
   };
 
-  const filteredInvoices = invoices.filter(inv => {
-    const matchesSearch = inv.invoice_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      inv.clients?.name.toLowerCase().includes(searchTerm.toLowerCase());
+  const safeInvoices = Array.isArray(invoices) ? invoices : DEMO_INVOICES;
+
+  const filteredInvoices = safeInvoices.filter(inv => {
+    const invoiceNumber = String(inv.invoice_number || "").toLowerCase();
+    const clientName = String(inv.clients?.name || "").toLowerCase();
+    const matchesSearch = invoiceNumber.includes(searchTerm.toLowerCase()) ||
+      clientName.includes(searchTerm.toLowerCase());
     const matchesStatus = statusFilter === 'all' || inv.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
 
   const metrics = {
-    totalBilled: invoices.reduce((acc, inv) => acc + (inv.status !== 'draft' ? inv.total : 0), 0),
-    paidCount: invoices.filter(inv => inv.status === 'paid').length,
-    pendingTotal: invoices.reduce((acc, inv) => acc + (inv.status === 'pending' ? inv.total : 0), 0),
-    overdueCount: invoices.filter(inv => inv.status === 'overdue').length,
+    totalBilled: safeInvoices.reduce((acc, inv) => acc + (inv.status !== 'draft' ? inv.total : 0), 0),
+    paidCount: safeInvoices.filter(inv => inv.status === 'paid').length,
+    pendingTotal: safeInvoices.reduce((acc, inv) => acc + (inv.status === 'pending' ? inv.total : 0), 0),
+    overdueCount: safeInvoices.filter(inv => inv.status === 'overdue').length,
   };
 
   const statusColors: Record<string, string> = {
@@ -116,6 +130,11 @@ export default function BillingPage() {
             <Download className="w-4 h-4 mr-2" /> {t('billing.exportCsv')}
           </Button>
         </div>
+        {loadError ? (
+          <div className="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+            Billing is using demo invoices right now because the backend response was unavailable.
+          </div>
+        ) : null}
       </Card>
 
       <Card className="overflow-hidden border-slate-200 shadow-sm">

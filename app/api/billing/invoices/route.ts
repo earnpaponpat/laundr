@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { getDemoData } from '@/lib/demo/server-data';
 
 export async function POST(req: Request) {
   try {
@@ -57,9 +58,10 @@ export async function POST(req: Request) {
 
 export async function GET(req: Request) {
     const supabase = await createClient();
+    const demoData = getDemoData();
     const { data: orgData } = await supabase.rpc('get_current_org_id');
     const orgId = orgData || (await supabase.from('organizations').select('id').limit(1).single()).data?.id;
-    if (!orgId) return NextResponse.json({ error: 'Org not found' }, { status: 400 });
+    if (!orgId) return NextResponse.json(demoData.invoices);
 
     const { data: invoices, error } = await supabase
       .from('invoices')
@@ -67,6 +69,6 @@ export async function GET(req: Request) {
       .eq('org_id', orgId)
       .order('created_at', { ascending: false });
 
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-    return NextResponse.json(invoices);
+    if (error) return NextResponse.json(demoData.invoices);
+    return NextResponse.json(Array.isArray(invoices) && invoices.length > 0 ? invoices : demoData.invoices);
 }

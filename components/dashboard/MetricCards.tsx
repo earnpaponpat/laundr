@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server';
 import { MetricDisplay, MetricValues } from './MetricDisplay';
+import { getDemoData } from '@/lib/demo/server-data';
 
 export async function MetricCards() {
   const supabase = await createClient();
@@ -9,69 +10,72 @@ export async function MetricCards() {
     || (await supabase.from('organizations').select('id').limit(1).single()).data?.id
     || '';
 
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const todayISO = today.toISOString();
-
   const monthStart = new Date();
   monthStart.setDate(1);
   monthStart.setHours(0, 0, 0, 0);
   const monthISO = monthStart.toISOString();
 
   const [
-    { count: totalInventory },
-    { count: outToday },
-    { count: returnedToday },
-    { count: rewashToday },
-    { count: lostMonth },
+    { count: cleanReady },
+    { count: outWithClients },
+    { count: inProduction },
+    { count: inRewash },
   ] = await Promise.all([
-    // Total inventory — exclude rejected items, filter by org
+    // Clean & Ready
     supabase
       .from('linen_items')
       .select('*', { count: 'exact', head: true })
       .eq('org_id', orgId)
-      .neq('status', 'rejected'),
+      .eq('status', 'clean'),
 
-    // Out today — checkout events today
-    supabase
-      .from('scan_events')
-      .select('*', { count: 'exact', head: true })
-      .eq('org_id', orgId)
-      .eq('event_type', 'checkout')
-      .gte('created_at', todayISO),
-
-    // Returned today — checkin events today
-    supabase
-      .from('scan_events')
-      .select('*', { count: 'exact', head: true })
-      .eq('org_id', orgId)
-      .eq('event_type', 'checkin')
-      .gte('created_at', todayISO),
-
-    // Rewash today — rewash events today
-    supabase
-      .from('scan_events')
-      .select('*', { count: 'exact', head: true })
-      .eq('org_id', orgId)
-      .eq('event_type', 'rewash')
-      .gte('created_at', todayISO),
-
-    // Lost this month
+    // Out with Clients
     supabase
       .from('linen_items')
       .select('*', { count: 'exact', head: true })
       .eq('org_id', orgId)
-      .eq('status', 'lost')
-      .gte('updated_at', monthISO),
+      .eq('status', 'out'),
+
+    // In Production
+    supabase
+      .from('linen_items')
+      .select('*', { count: 'exact', head: true })
+      .eq('org_id', orgId)
+      .in('status', ['dirty', 'washing', 'drying', 'folding']),
+
+    // In Rewash
+    supabase
+      .from('linen_items')
+      .select('*', { count: 'exact', head: true })
+      .eq('org_id', orgId)
+      .eq('status', 'rewash'),
+
   ]);
 
+  const lostByUpdated = await supabase
+    .from('linen_items')
+    .select('*', { count: 'exact', head: true })
+    .eq('org_id', orgId)
+    .eq('status', 'lost')
+    .gte('updated_at', monthISO);
+
+  const lostMonth = lostByUpdated.error
+    ? await supabase
+        .from('linen_items')
+        .select('*', { count: 'exact', head: true })
+        .eq('org_id', orgId)
+        .eq('status', 'lost')
+        .gte('created_at', monthISO)
+    : lostByUpdated;
+
   const initial: MetricValues = {
-    totalInventory: totalInventory ?? 0,
-    outToday: outToday ?? 0,
-    returnedToday: returnedToday ?? 0,
-    rewashToday: rewashToday ?? 0,
-    lostMonth: lostMonth ?? 0,
+    cleanReady: cleanReady ?? 0,
+    outWithClients: outWithClients ?? 0,
+    inProduction: inProduction ?? 0,
+    inRewash: inRewash ?? 0,
+    lostMonth: lostMonth.count ?? 0,
   };
 
-  return <MetricDisplay orgId={orgId} initial={initial} />;
+  const totalLiveValues = Object.values(initial).reduce((sum, value) => sum + value, 0);
+
+  return <MetricDisplay initial={totalLiveValues > 0 ? initial : getDemoData().metrics} />;
 }

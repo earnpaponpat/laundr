@@ -12,6 +12,7 @@ import {
   History, MapPin, AlertOctagon, RefreshCw, 
   Download, ArrowRightLeft, CheckCircle2, Factory, Loader2
 } from "lucide-react";
+import { getDemoItemDetail } from "@/lib/demo/server-data";
 
 interface ItemDetailSheetProps {
   itemId: string | null;
@@ -50,7 +51,9 @@ export function ItemDetailSheet({ itemId, open, onOpenChange, onActionComplete }
       .eq("id", id)
       .single();
 
-    if (itemData) setItem(itemData);
+    if (itemData) {
+      setItem(itemData);
+    }
 
     // Fetch history
     const { data: historyData } = await supabase
@@ -63,14 +66,29 @@ export function ItemDetailSheet({ itemId, open, onOpenChange, onActionComplete }
       .order("created_at", { ascending: false })
       .limit(10);
 
-    if (historyData) setEvents(historyData);
+    if (historyData) {
+      setEvents(historyData);
+    }
+
+    if (!itemData) {
+      const demoDetail = getDemoItemDetail(id);
+      if (demoDetail) {
+        setItem(demoDetail.item);
+        setEvents(demoDetail.events);
+      }
+    }
     setLoading(false);
   };
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case "in_stock": return "success";
+      case "in_stock":
+      case "clean": return "success";
       case "out": return "default"; // internal blue
+      case "dirty":
+      case "washing":
+      case "drying":
+      case "folding": return "outline";
       case "rewash": return "warning";
       case "rejected": return "destructive";
       case "lost": return "secondary";
@@ -162,7 +180,9 @@ export function ItemDetailSheet({ itemId, open, onOpenChange, onActionComplete }
                       <MapPin className="w-3 h-3 mr-1" /> Current Location
                     </div>
                     <div className="font-medium text-sm">
-                      {item.status === "in_stock" ? "Factory" : (item.clients?.name || "Unknown Client")}
+                      {item.status === "in_stock" || item.status === "clean"
+                        ? (item.last_scan_location || "Factory")
+                        : (item.clients?.name || item.last_scan_location || "Unknown Client")}
                     </div>
                   </div>
                   <div className="bg-slate-50 p-3 rounded-lg border">
@@ -198,6 +218,21 @@ export function ItemDetailSheet({ itemId, open, onOpenChange, onActionComplete }
                 <Button variant="outline" size="icon" onClick={handleExportCSV}>
                   <Download className="w-4 h-4" />
                 </Button>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="bg-slate-50 p-3 rounded-lg border">
+                  <div className="text-xs text-slate-500 mb-1">Last Scan</div>
+                  <div className="font-medium text-sm">
+                    {item.last_scan_at ? formatDistanceToNow(new Date(item.last_scan_at), { addSuffix: true }) : "N/A"}
+                  </div>
+                  <div className="text-xs text-slate-400 mt-1">{item.last_scan_location || "Unknown location"}</div>
+                </div>
+                <div className="bg-slate-50 p-3 rounded-lg border">
+                  <div className="text-xs text-slate-500 mb-1">Lifecycle State</div>
+                  <div className="font-medium text-sm capitalize">{item.status.replaceAll("_", " ")}</div>
+                  <div className="text-xs text-slate-400 mt-1">SKU: {item.linen_categories?.name}</div>
+                </div>
               </div>
 
               {/* Timeline Section */}

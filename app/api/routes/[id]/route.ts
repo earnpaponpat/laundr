@@ -53,7 +53,7 @@ export async function PATCH(
                 item_id: e.item_id,
                 client_id: e.client_id,
                 gate_id: `${e.gate_id}_manifest`,
-                event_type: 'delivery_signed',
+                event_type: 'dispatch',
                 batch_id: batchId,
                 source: 'manifest_signed',
               }))

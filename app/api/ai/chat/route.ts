@@ -4,7 +4,7 @@ import { fetchOpenRouter } from '@/lib/openrouter';
 
 export async function POST(req: Request) {
   try {
-    const { messages, orgId, language = 'en' } = await req.json();
+    const { messages, language = 'en' } = await req.json();
     const supabase = await createClient();
 
     const [
@@ -12,7 +12,7 @@ export async function POST(req: Request) {
       { count: out },
       { count: rewash }
     ] = await Promise.all([
-      supabase.from('linen_items').select('*', { count: 'exact', head: true }).eq('status', 'in_stock'),
+      supabase.from('linen_items').select('*', { count: 'exact', head: true }).eq('status', 'clean'),
       supabase.from('linen_items').select('*', { count: 'exact', head: true }).eq('status', 'out'),
       supabase.from('linen_items').select('*', { count: 'exact', head: true }).eq('status', 'rewash'),
     ]);

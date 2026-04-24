@@ -7,6 +7,7 @@ import { TodayRoutes } from '@/components/dashboard/TodayRoutes';
 import { AIInsightsPanel } from '@/components/ai/AIInsightsPanel';
 import { AIAssistantChat } from '@/components/ai/AIAssistantChat';
 import { Skeleton } from '@/components/ui/skeleton';
+import { TomorrowParLevelAlert } from '@/components/dashboard/TomorrowParLevelAlert';
 
 export default function DashboardPage() {
   return (
@@ -22,6 +23,11 @@ export default function DashboardPage() {
           </div>
         }>
           <MetricCards />
+        </Suspense>
+      </div>
+      <div className="animate-fade-up">
+        <Suspense fallback={<Skeleton className="h-[72px] w-full rounded-xl" />}>
+          <TomorrowParLevelAlert />
         </Suspense>
       </div>
 

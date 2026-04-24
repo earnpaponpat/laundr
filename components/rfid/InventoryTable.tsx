@@ -87,13 +87,13 @@ export function InventoryTable({ items, page, totalCount, pageSize }: InventoryT
                   </TableCell>
                   <TableCell className="px-6 py-4 font-medium text-slate-700">{item.linen_categories?.name}</TableCell>
                   <TableCell className="px-6 py-4">
-                    <StatusBadge status={item.status === 'in_stock' ? 'IN STOCK' : item.status} />
+                    <StatusBadge status={item.status} />
                   </TableCell>
                   <TableCell className="px-6 py-4 text-slate-600 font-medium">
-                    {item.status === 'in_stock' ? 
+                    {item.status === 'clean' ?
                       <span className="text-emerald-600 flex items-center gap-1.5 font-bold text-xs uppercase tracking-tight">
                         <CheckCircle2 className="w-3 h-3" /> {t('dashboard.inHouse')}
-                      </span> : 
+                      </span> :
                       (item.clients?.name || "-")
                     }
                   </TableCell>
